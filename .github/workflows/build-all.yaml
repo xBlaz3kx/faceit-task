@@ -1,0 +1,30 @@
+name: "Build Docker images"
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - 'docker-compose.yaml'
+      - '*.md'
+      - 'Makefile'
+    tags:
+      - v*
+
+  pull_request:
+    types: [ opened, synchronize ]
+    branches:
+      - main
+    paths-ignore:
+      - '*.md'
+      - 'docker-compose.yaml'
+      - 'Makefile'
+  workflow_dispatch:
+
+jobs:
+  build-server:
+    name: "Build server"
+    uses: ./.github/workflows/build.yaml
+    with:
+      service: user
+      docker_repository: user-service
+      dockerfile: "./build/Dockerfile"

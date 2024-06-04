@@ -1,0 +1,39 @@
+services:
+
+  # MongoDB instance
+  mongo:
+    image: mongo:7
+    container_name: mongodb
+    hostname: mongodb
+    restart: on-failure
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=mongo
+      - MONGO_INITDB_ROOT_PASSWORD=mongo
+      - MONGO_INITDB_DATABASE=faceit
+    volumes:
+      - mongo:/data/db
+    ports:
+      - "27017:27017"
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongo --quiet
+      retries: 3
+      interval: 10s
+      start_period: 5s
+
+  # User service, healthcheck is built in the image
+  user-service:
+    hostname: user-service
+    image: user-service
+    restart: on-failure
+    depends_on:
+      mongo:
+        condition: service_healthy
+    build:
+      context: .
+      dockerfile: ./build/Dockerfile
+      target: app
+    ports:
+      - "8080:80"
+
+volumes:
+  mongo:
