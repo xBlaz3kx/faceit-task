@@ -2,11 +2,14 @@ package handlers
 
 import (
 	"context"
+	"errors"
 
+	"github.com/google/uuid"
 	"github.com/samber/lo"
 	"github.com/xBlaz3kx/faceit-task/internal/domain/services/user"
 	v1 "github.com/xBlaz3kx/faceit-task/pkg/proto/v1"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 type UserGrpcHandler struct {
@@ -107,6 +110,48 @@ func (s *UserGrpcHandler) GetUsers(ctx context.Context, request *v1.ListUsersReq
 	return &v1.ListUsersResponse{
 		Users: userList,
 	}, nil
+}
+
+func (s *UserGrpcHandler) Watch(_ *emptypb.Empty, server v1.User_WatchServer) error {
+	// For simplicity, we will generate a random client id for creating and storing a change stream for a client
+	clientId := uuid.New().String()
+
+	// Create a new change stream channel for the client
+	streamChannel := s.userService.GetChangeStreamChannel(clientId)
+	// After the client disconnects, remove the change stream channel
+	defer s.userService.RemoveStream(clientId)
+
+	for {
+		select {
+		// Check if the client has disconnected or the context has been canceled
+		case <-server.Context().Done():
+			err := server.Context().Err()
+
+			if errors.Is(err, context.Canceled) {
+				s.logger.Info("Client disconnected")
+			} else {
+				s.logger.Error("Client disconnected with error", zap.Error(err))
+			}
+
+			return nil
+
+		case change, closed := <-streamChannel:
+			if !closed {
+				return nil
+			}
+
+			response := &v1.WatchStreamResponse{
+				Action: string(change.OperationType),
+				User:   toGrpcUser(&change.User),
+			}
+
+			// Send the update to the stream
+			err := server.Send(response)
+			if err != nil {
+				return err
+			}
+		}
+	}
 }
 
 func (s *UserGrpcHandler) mustEmbedUnimplementedUserServer() {

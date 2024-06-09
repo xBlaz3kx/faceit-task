@@ -11,6 +11,7 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -32,6 +33,10 @@ type UserClient interface {
 	DeleteUser(ctx context.Context, in *DeleteUserRequest, opts ...grpc.CallOption) (*DeleteUserResponse, error)
 	// Request a list of users, with optional filters and pagination
 	GetUsers(ctx context.Context, in *ListUsersRequest, opts ...grpc.CallOption) (*ListUsersResponse, error)
+	// Allowing external services to get changes to user entities
+	// This will emit changes for ALL entities.
+	// Possible improvement: Add a filter to only emit changes for a specific entity or action
+	Watch(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (User_WatchClient, error)
 }
 
 type userClient struct {
@@ -87,6 +92,38 @@ func (c *userClient) GetUsers(ctx context.Context, in *ListUsersRequest, opts ..
 	return out, nil
 }
 
+func (c *userClient) Watch(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (User_WatchClient, error) {
+	stream, err := c.cc.NewStream(ctx, &User_ServiceDesc.Streams[0], "/user_v1.User/Watch", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &userWatchClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type User_WatchClient interface {
+	Recv() (*WatchStreamResponse, error)
+	grpc.ClientStream
+}
+
+type userWatchClient struct {
+	grpc.ClientStream
+}
+
+func (x *userWatchClient) Recv() (*WatchStreamResponse, error) {
+	m := new(WatchStreamResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // UserServer is the server API for User service.
 // All implementations must embed UnimplementedUserServer
 // for forward compatibility
@@ -101,6 +138,10 @@ type UserServer interface {
 	DeleteUser(context.Context, *DeleteUserRequest) (*DeleteUserResponse, error)
 	// Request a list of users, with optional filters and pagination
 	GetUsers(context.Context, *ListUsersRequest) (*ListUsersResponse, error)
+	// Allowing external services to get changes to user entities
+	// This will emit changes for ALL entities.
+	// Possible improvement: Add a filter to only emit changes for a specific entity or action
+	Watch(*emptypb.Empty, User_WatchServer) error
 	mustEmbedUnimplementedUserServer()
 }
 
@@ -122,6 +163,9 @@ func (UnimplementedUserServer) DeleteUser(context.Context, *DeleteUserRequest) (
 }
 func (UnimplementedUserServer) GetUsers(context.Context, *ListUsersRequest) (*ListUsersResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetUsers not implemented")
+}
+func (UnimplementedUserServer) Watch(*emptypb.Empty, User_WatchServer) error {
+	return status.Errorf(codes.Unimplemented, "method Watch not implemented")
 }
 func (UnimplementedUserServer) mustEmbedUnimplementedUserServer() {}
 
@@ -226,6 +270,27 @@ func _User_GetUsers_Handler(srv interface{}, ctx context.Context, dec func(inter
 	return interceptor(ctx, in, info, handler)
 }
 
+func _User_Watch_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(emptypb.Empty)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(UserServer).Watch(m, &userWatchServer{stream})
+}
+
+type User_WatchServer interface {
+	Send(*WatchStreamResponse) error
+	grpc.ServerStream
+}
+
+type userWatchServer struct {
+	grpc.ServerStream
+}
+
+func (x *userWatchServer) Send(m *WatchStreamResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
 // User_ServiceDesc is the grpc.ServiceDesc for User service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -254,6 +319,12 @@ var User_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _User_GetUsers_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "Watch",
+			Handler:       _User_Watch_Handler,
+			ServerStreams: true,
+		},
+	},
 	Metadata: "user.proto",
 }

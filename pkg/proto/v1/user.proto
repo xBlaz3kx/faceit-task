@@ -4,6 +4,8 @@ package user_v1;
 
 option go_package = "./proto/v1";
 
+import "google/protobuf/empty.proto";
+
 service User {
   // Create a new user
   rpc CreateUser(CreateUserRequest) returns (CreateUserResponse);
@@ -19,6 +21,11 @@ service User {
 
   // Request a list of users, with optional filters and pagination
   rpc GetUsers(ListUsersRequest) returns (ListUsersResponse);
+
+  // Allowing external services to get changes to user entities
+  // This will emit changes for ALL entities.
+  // Possible improvement: Add a filter to only emit changes for a specific entity or action
+  rpc Watch(google.protobuf.Empty) returns (stream WatchStreamResponse);
 }
 
 message UserModel {
@@ -88,4 +95,9 @@ message ListUsersRequest {
 
 message ListUsersResponse {
   repeated UserModel users = 1;
+}
+
+message WatchStreamResponse {
+  string action = 1; // Delete | Update | Insert
+  UserModel user = 2; // The user that was affected. If it was deleted, only  the ID will be present
 }
