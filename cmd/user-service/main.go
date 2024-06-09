@@ -13,6 +13,7 @@ import (
 	"github.com/xBlaz3kx/faceit-task/internal/domain/services/user"
 	"github.com/xBlaz3kx/faceit-task/internal/repositories/mongo"
 	"github.com/xBlaz3kx/faceit-task/pkg/configuration"
+	"github.com/xBlaz3kx/faceit-task/pkg/notifier"
 	v1 "github.com/xBlaz3kx/faceit-task/pkg/proto/v1"
 	"go.uber.org/zap"
 )
@@ -47,7 +48,8 @@ var rootCmd = &cobra.Command{
 		userRepository := mongo.NewUserRepository()
 
 		// Create the user service
-		userService := user.NewUserService(userRepository)
+		userChangeNotifier := notifier.NewNotifier[user.ChangeStreamData]()
+		userService := user.NewUserService(userRepository, userChangeNotifier)
 
 		grpcServer := grpc.NewServer()
 
@@ -63,6 +65,9 @@ var rootCmd = &cobra.Command{
 
 		// Wait for the interrupt signal
 		<-ctx.Done()
+
+		// Close the notifier's channels
+		userChangeNotifier.Close()
 
 		// Gracefully shutdown the GRPC server
 		grpcServer.Stop()

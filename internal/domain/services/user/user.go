@@ -16,11 +16,11 @@ type userServiceImpl struct {
 	notifier   *notifier.Notifier[ChangeStreamData]
 }
 
-func NewUserService(repository repositories.UserRepository) *userServiceImpl {
+func NewUserService(repository repositories.UserRepository, notifier *notifier.Notifier[ChangeStreamData]) *userServiceImpl {
 	return &userServiceImpl{
 		repository: repository,
 		logger:     zap.L().Named("user-service"),
-		notifier:   notifier.NewNotifier[ChangeStreamData](),
+		notifier:   notifier,
 	}
 }
 
@@ -114,8 +114,9 @@ func (s *userServiceImpl) GetUser(ctx context.Context, id string) (*User, error)
 	return lo.ToPtr(toUser(repoUser)), nil
 }
 
+// GetChangeStreamChannel returns a channel that will be used to notify the clients about the changes in the database.
 func (s *userServiceImpl) GetChangeStreamChannel(clientId string) <-chan ChangeStreamData {
-	// todo multiplex the stream - each client should have its own stream and all the clients should receive the same update
+	// Each client should have its own stream and all the clients should receive the same update.
 	return s.notifier.AddSubscriber(clientId)
 }
 

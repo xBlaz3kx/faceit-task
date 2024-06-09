@@ -25,6 +25,7 @@ type ChangeStreamData struct {
 	// OperationType is the type of operation that was performed.
 	OperationType ChangeStreamOperation `json:"operationType"`
 
+	// User is the user that was affected by the operation.
 	User User `json:"user"`
 }
 

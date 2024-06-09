@@ -50,7 +50,6 @@ func (d *Notifier[T]) Broadcast(msg T) {
 			ch <- msg
 		}
 	}()
-
 }
 
 func (d *Notifier[T]) Close() {
