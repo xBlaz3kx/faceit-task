@@ -80,7 +80,7 @@ message DeleteUserRequest {
 }
 
 message DeleteUserResponse {
-  string Status = 1;
+  DeleteStatus Status = 1;
 }
 
 message ListUsersRequest {
@@ -98,6 +98,17 @@ message ListUsersResponse {
 }
 
 message WatchStreamResponse {
-  string action = 1; // Delete | Update | Insert
+  ChangeType changeType = 1; // Delete | Update | Insert
   UserModel user = 2; // The user that was affected. If it was deleted, only  the ID will be present
+}
+
+enum ChangeType {
+  INSERT = 0;
+  UPDATE = 1;
+  DELETE = 2;
+}
+
+enum DeleteStatus {
+  OK = 0;
+  NOT_FOUND = 1;
 }

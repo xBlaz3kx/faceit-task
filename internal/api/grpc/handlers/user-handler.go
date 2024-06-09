@@ -85,7 +85,7 @@ func (s *UserGrpcHandler) DeleteUser(ctx context.Context, request *v1.DeleteUser
 	}
 
 	return &v1.DeleteUserResponse{
-		Status: "Success",
+		Status: v1.DeleteStatus_OK,
 	}, nil
 }
 
@@ -141,8 +141,8 @@ func (s *UserGrpcHandler) Watch(_ *emptypb.Empty, server v1.User_WatchServer) er
 			}
 
 			response := &v1.WatchStreamResponse{
-				Action: string(change.OperationType),
-				User:   toGrpcUser(&change.User),
+				ChangeType: toChangeType(change.OperationType),
+				User:       toGrpcUser(&change.User),
 			}
 
 			// Send the update to the stream
@@ -155,6 +155,20 @@ func (s *UserGrpcHandler) Watch(_ *emptypb.Empty, server v1.User_WatchServer) er
 }
 
 func (s *UserGrpcHandler) mustEmbedUnimplementedUserServer() {
+}
+
+func toChangeType(operationType user.ChangeStreamOperation) v1.ChangeType {
+	switch operationType {
+	case user.ChangeStreamOperationInsert:
+		return v1.ChangeType_INSERT
+	case user.ChangeStreamOperationUpdate:
+		return v1.ChangeType_UPDATE
+	case user.ChangeStreamOperationDelete:
+		return v1.ChangeType_DELETE
+	default:
+		// This should never happen
+		return -1
+	}
 }
 
 func toGrpcUser(user *user.User) *v1.UserModel {
