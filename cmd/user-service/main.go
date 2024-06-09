@@ -66,9 +66,6 @@ var rootCmd = &cobra.Command{
 		// Wait for the interrupt signal
 		<-ctx.Done()
 
-		// Close the notifier's channels
-		userChangeNotifier.Close()
-
 		// Gracefully shutdown the GRPC server
 		grpcServer.Stop()
 
