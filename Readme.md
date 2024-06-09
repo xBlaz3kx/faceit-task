@@ -90,3 +90,11 @@ Using the Clean Architecture and Domain Driven Design principles, the project is
 - Passwords are hashed using bcrypt and stored in the database.
 - For simplicity's sake, we don't validate any input data.
 - Getting a user or listing users won't return the password hash in the response object (for security reasons).
+- Simplified change streams - the service currently emits changes to multiple GRPC clients using an internal
+  notification/messaging system. Changes are emitted in the service level, after the database operation is successful.
+- Currently, all changes are emitted to all clients. This could be improved by adding a filter to the change stream.
+- The health checks are implemented using the HTTP API. The healthcheck endpoint is available at `/healthz`. This
+  could've been implemented using gRPC as well.
+- TLS certificate handling is not implemented, but should be added for production use.
+- Both GRPC and HTTP API are using logging and recovery middleware/interceptors. In production, full observability would
+  be nice as well.

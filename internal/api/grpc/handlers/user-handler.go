@@ -35,6 +35,8 @@ func (s *UserGrpcHandler) CreateUser(ctx context.Context, request *v1.CreateUser
 		Country:   request.GetCountry(),
 	}
 
+	// todo validate request
+
 	user, err := s.userService.AddUser(ctx, serviceReq)
 	// todo handle error cases
 	if err != nil {
