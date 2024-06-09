@@ -113,7 +113,7 @@ func (s *userServiceImpl) AddUser(ctx context.Context, user NewUser) (*User, err
 	s.logger.Info("Adding a new user", zap.Any("user", user))
 
 	repoUser := repositories.NewUser(user.FirstName, user.LastName, user.Nickname, user.Email, user.Password, user.Country)
-	err := s.repository.AddUser(ctx, *repoUser)
+	err := s.repository.AddUser(ctx, repoUser)
 	if err != nil {
 		return nil, err
 	}

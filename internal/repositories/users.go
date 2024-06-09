@@ -13,7 +13,7 @@ var (
 )
 
 type UserRepository interface {
-	AddUser(ctx context.Context, user User) error
+	AddUser(ctx context.Context, user *User) error
 	UpdateUser(ctx context.Context, user User) (*User, error)
 	DeleteUser(ctx context.Context, id string) error
 	GetUser(ctx context.Context, id string) (*User, error)
@@ -77,6 +77,6 @@ func (u *User) Creating(ctx context.Context) error {
 }
 
 func hashPassword(password string) (string, error) {
-	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	return string(bytes), err
 }

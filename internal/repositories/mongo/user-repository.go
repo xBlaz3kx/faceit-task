@@ -22,15 +22,15 @@ func NewUserRepository() *userRepository {
 	}
 }
 
-func (u *userRepository) AddUser(ctx context.Context, user repositories.User) error {
+func (u *userRepository) AddUser(ctx context.Context, user *repositories.User) error {
 	u.logger.Info("Adding user to the database")
 	// todo check if the user with the nickname/email already exists?
-	return mgm.Coll(&user).CreateWithCtx(ctx, &user)
+	return mgm.Coll(&repositories.User{}).CreateWithCtx(ctx, user)
 }
 
 func (u *userRepository) UpdateUser(ctx context.Context, user repositories.User) (*repositories.User, error) {
 	u.logger.Info("Updating user in the database")
-	err := mgm.Coll(&user).UpdateWithCtx(ctx, &user)
+	err := mgm.Coll(&repositories.User{}).UpdateWithCtx(ctx, &user)
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +62,7 @@ func (u *userRepository) GetUser(ctx context.Context, id string) (*repositories.
 	u.logger.Info("Getting a user from the database", zap.String("id", id))
 
 	user := &repositories.User{}
-	err := mgm.Coll(user).FindByIDWithCtx(ctx, id, user)
+	err := mgm.Coll(&repositories.User{}).FindByIDWithCtx(ctx, id, user)
 	if err != nil {
 		return nil, err
 	}
@@ -112,7 +112,7 @@ func (u *userRepository) GetUsers(ctx context.Context, firstName, lastName, nick
 	}
 
 	users := []repositories.User{}
-	err := mgm.Coll(&repositories.User{}).SimpleFindWithCtx(ctx, users, query, opts)
+	err := mgm.Coll(&repositories.User{}).SimpleFindWithCtx(ctx, &users, query, opts)
 	if err != nil {
 		return nil, err
 	}
