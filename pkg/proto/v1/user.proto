@@ -1,0 +1,91 @@
+syntax = "proto3";
+
+package user_v1;
+
+option go_package = "./proto/v1";
+
+service User {
+  // Create a new user
+  rpc CreateUser(CreateUserRequest) returns (CreateUserResponse);
+
+  // Get a user by id
+  rpc GetUser(GetUserRequest) returns (GetUserResponse);
+
+  // Update a user by id
+  rpc UpdateUser(UpdateUserRequest) returns (UpdateUserResponse);
+
+  // Delete a user by id
+  rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse);
+
+  // Request a list of users, with optional filters and pagination
+  rpc GetUsers(ListUsersRequest) returns (ListUsersResponse);
+}
+
+message UserModel {
+  string id = 1;
+  string name = 2;
+  string lastName = 3;
+  string email = 4;
+  string nickname = 5;
+  string country = 6;
+
+  // time created = 7;
+  // time updated = 8;
+}
+
+message GetUserRequest {
+  string id = 1;
+}
+
+message GetUserResponse {
+  UserModel user = 1;
+}
+
+message CreateUserRequest {
+  string firstName = 1;
+  string lastName = 2;
+  string email = 3;
+  string password = 4;
+  string nickname = 5;
+  string country = 6;
+}
+
+message CreateUserResponse {
+  UserModel user = 1;
+}
+
+message UpdateUserRequest {
+  string id = 1;
+  string firstName = 2;
+  string lastName = 3;
+  string email = 4;
+  string password = 5;
+  string nickname = 6;
+  string country = 7;
+}
+
+message UpdateUserResponse {
+  UserModel user = 1;
+}
+
+message DeleteUserRequest {
+  string id = 1;
+}
+
+message DeleteUserResponse {
+  string Status = 1;
+}
+
+message ListUsersRequest {
+  optional int64 page = 1;
+  optional int64 limit = 2;
+  optional string firstName = 3;
+  optional string lastName = 4;
+  optional string email = 5;
+  optional string nickname = 6;
+  optional string country = 7;
+}
+
+message ListUsersResponse {
+  repeated UserModel users = 1;
+}
