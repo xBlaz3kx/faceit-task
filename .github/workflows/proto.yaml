@@ -1,6 +1,12 @@
 name: Protobuf lint & compile
 
 on:
+  push:
+    paths:
+      - '**/*.proto'
+    branches:
+      - main
+
   pull_request:
     paths:
       - '**/*.proto'
