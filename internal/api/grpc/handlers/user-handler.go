@@ -44,8 +44,14 @@ func (s *UserGrpcHandler) CreateUser(ctx context.Context, request *v1.CreateUser
 }
 
 func (s *UserGrpcHandler) GetUser(ctx context.Context, request *v1.GetUserRequest) (*v1.GetUserResponse, error) {
+	user, err := s.userService.GetUser(ctx, request.GetId())
+	if err != nil {
+		return nil, err
+	}
 
-	return &v1.GetUserResponse{}, nil
+	return &v1.GetUserResponse{
+		User: toGrpcUser(user),
+	}, nil
 }
 
 func (s *UserGrpcHandler) UpdateUser(ctx context.Context, request *v1.UpdateUserRequest) (*v1.UpdateUserResponse, error) {
