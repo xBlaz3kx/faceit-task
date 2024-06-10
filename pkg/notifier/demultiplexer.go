@@ -1,19 +1,27 @@
 package notifier
 
-import "sync"
+import (
+	"sync"
+
+	"go.uber.org/zap"
+)
 
 type Notifier[T any] struct {
 	receiverChannels map[string]chan T
 	mu               sync.Mutex
+	logger           *zap.Logger
 }
 
 func NewNotifier[T any]() *Notifier[T] {
 	return &Notifier[T]{
 		receiverChannels: map[string]chan T{},
+		logger:           zap.L().Named("notifier"),
 	}
 }
 
 func (d *Notifier[T]) AddSubscriber(id string) chan T {
+	d.logger.Debug("Adding a new subscriber", zap.String("id", id))
+
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
@@ -33,6 +41,8 @@ func (d *Notifier[T]) RemoveSubscriber(id string) {
 		return
 	}
 
+	d.logger.Debug("Removing a subscriber", zap.String("id", id))
+
 	// Close the channel
 	close(d.receiverChannels[id])
 
@@ -41,6 +51,8 @@ func (d *Notifier[T]) RemoveSubscriber(id string) {
 }
 
 func (d *Notifier[T]) Broadcast(msg T) {
+	d.logger.Debug("Broadcasting a message to subscribers", zap.Any("message", msg))
+
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
@@ -53,6 +65,8 @@ func (d *Notifier[T]) Broadcast(msg T) {
 }
 
 func (d *Notifier[T]) Close() {
+	d.logger.Debug("Closing the notifier")
+
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
