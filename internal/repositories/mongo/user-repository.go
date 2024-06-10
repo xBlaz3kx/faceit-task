@@ -109,6 +109,8 @@ func (u *userRepository) GetUsers(ctx context.Context, firstName, lastName, nick
 	opts := &options.FindOptions{
 		Limit: lo.ToPtr(*limit),
 		Skip:  lo.ToPtr(*offset),
+		// Sorting by created_at in descending order
+		Sort: bson.D{{"created_at", -1}},
 	}
 
 	users := []repositories.User{}
