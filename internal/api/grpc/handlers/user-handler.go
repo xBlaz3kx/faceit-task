@@ -47,6 +47,8 @@ func (s *UserGrpcHandler) CreateUser(ctx context.Context, request *v1.CreateUser
 		}, nil
 	case errors.Is(err, user.ErrValidation):
 		return nil, status.Errorf(codes.FailedPrecondition, "failed to validate the user: %v", err.Error())
+	case errors.Is(err, repositories.ErrUserAlreadyExists):
+		return nil, status.Errorf(codes.AlreadyExists, "user with email %s already exists", request.GetEmail())
 	default:
 		return nil, status.Error(codes.Internal, "unknown error occurred while creating the user")
 	}

@@ -26,8 +26,20 @@ func NewUserRepository() *userRepository {
 
 func (u *userRepository) AddUser(ctx context.Context, user *repositories.User) error {
 	u.logger.Info("Adding user to the database")
-	// todo check if the user with the nickname/email already exists?
+	userCollection := mgm.Coll(&repositories.User{})
+
+	// Check if a user with this email already exists
+	cursor, err := userCollection.Find(ctx, bson.M{"email": user.Email})
+	if err != nil {
+		return err
+	}
+
+	if cursor.RemainingBatchLength() > 0 {
+		return repositories.ErrUserAlreadyExists
+	}
+
 	return mgm.Coll(&repositories.User{}).CreateWithCtx(ctx, user)
+
 }
 
 func (u *userRepository) UpdateUser(ctx context.Context, user repositories.User) (*repositories.User, error) {
