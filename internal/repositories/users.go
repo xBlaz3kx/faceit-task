@@ -76,6 +76,22 @@ func (u *User) Creating(ctx context.Context) error {
 	return nil
 }
 
+// Updating is a hook that is called before the user is updated. It will hash the password to securely store it.
+func (u *User) Updating(ctx context.Context) error {
+	if u.Password == "" {
+		return nil
+	}
+
+	// Hash the password
+	pass, err := hashPassword(u.Password)
+	if err != nil {
+		return err
+	}
+
+	u.Password = pass
+	return nil
+}
+
 func hashPassword(password string) (string, error) {
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	return string(bytes), err
