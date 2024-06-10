@@ -2,9 +2,9 @@
 
 ## Description
 
-The project is a simple user management service, that allows to create, read, update and delete users. The service is
-implemented using Go and gRPC API. The data is stored in MongoDB. The service also contains the health check endpoint,
-that can be used to check the service status.
+The project is a simple user management service, that allows to create, read, update, delete users as well as watching
+for user changes (streaming). The service is implemented using Go and gRPC API. The data is stored in MongoDB. The
+service also contains an HTTP health check endpoint, that can be used to check the service status.
 
 The solution is fully containerized using Docker and Docker compose.
 
@@ -17,11 +17,20 @@ The application can be deployed using Docker or running the binary directly.
 Deploy the solution using Docker compose:
 
 ```bash
-docker-compose up -d
+docker-compose up --build -d
 ```
 
-The deployment will start both the user-service and MongoDB containers. The user-service's gRPC API will be available on
+The deployment will start both the service and MongoDB containers. The service's gRPC API will be available on
 port 8080 by default, but can be configured using the config file or environment variables.
+
+### Running the binary
+
+To run the service directly, you need to have a MongoDB instance running. The service can be started using the following
+command:
+
+```bash
+  USER_DATABASE_URI=mongodb://mongo:mongo@localhost:27017/faceit?authSource=admin go run cmd/user-service/main.go 
+```
 
 ## Configuration
 
@@ -30,7 +39,6 @@ be configured:
 
 - `server` - the server address and port
 - `database` - the MongoDB connection string
-- `logging_level` - the log level (debug, info, warn, error)
 
 ### Configuration file
 
@@ -42,15 +50,28 @@ fields:
 server: 0.0.0.0:80
 # The MongoDB connection string
 database: mongodb://mongo:mongo@localhost:27017
-# Logging level: debug, info, warn, error
-logging:
-  level: debug
 ```
 
 ### Environment variables
 
 All environment variables are prefixed with `USER` prefix. The underscore (`_`) is used as a delimited to separate any
 nested fields. For example, the `server` configuration can be set using the `USER_SERVER` environment variable.
+
+### Flags
+
+To see the available flags, run the service with the `--help` flag. The output will be similar to the following:
+
+```text
+User service
+
+Usage:
+user [flags]
+
+Flags:
+-c, --config string   Path to the configuration file
+-h, --help            help for user
+-v, --version         version for user
+```
 
 ## Project Structure
 
