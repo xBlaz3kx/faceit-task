@@ -1,6 +1,11 @@
 package user
 
-import "context"
+import (
+	"context"
+	"errors"
+)
+
+var ErrValidation = errors.New("validation error")
 
 type UserService interface {
 	AddUser(ctx context.Context, user NewUser) (*User, error)
@@ -41,10 +46,10 @@ type NewUser struct {
 	Nickname string `json:"nickname"`
 
 	// Email of the user.
-	Email string `json:"email"`
+	Email string `json:"email" validate:"required,email"`
 
 	// Hashed Password of the user.
-	Password string `json:"password"`
+	Password string `json:"password" validate:"required,min=8"`
 
 	// Country of the user.
 	Country string `json:"country"`

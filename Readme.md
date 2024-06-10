@@ -47,7 +47,7 @@ fields:
 
 ```yaml
 # The gRPC server address and port
-server: 0.0.0.0:80
+server: 0.0.0.0:8080
 # The MongoDB connection string
 database: mongodb://mongo:mongo@localhost:27017
 ```
@@ -109,7 +109,8 @@ Using the Clean Architecture and Domain Driven Design principles, the project is
 ## Notes
 
 - Passwords are hashed using bcrypt and stored in the database.
-- For simplicity's sake, we don't validate any input data.
+- As no specific validation requirements were provided, I concluded that minimal validation should be present - when
+  creating a user, a valid email and password with a minimum length of 8 characters are required.
 - Getting a user or listing users won't return the password hash in the response object (for security reasons).
 - Simplified change streams - the service currently emits changes to multiple GRPC clients using an internal
   notification/messaging system. Changes are emitted in the service level, after the database operation is successful.

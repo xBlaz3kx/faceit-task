@@ -4,10 +4,12 @@ import (
 	"context"
 
 	"github.com/kamva/mgm/v3"
+	"github.com/pkg/errors"
 	"github.com/samber/lo"
 	"github.com/xBlaz3kx/faceit-task/internal/repositories"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.uber.org/zap"
 )
@@ -31,11 +33,14 @@ func (u *userRepository) AddUser(ctx context.Context, user *repositories.User) e
 func (u *userRepository) UpdateUser(ctx context.Context, user repositories.User) (*repositories.User, error) {
 	u.logger.Info("Updating user in the database")
 	err := mgm.Coll(&repositories.User{}).UpdateWithCtx(ctx, &user)
-	if err != nil {
+	switch {
+	case err == nil:
+		return &user, nil
+	case errors.Is(err, mongo.ErrNoDocuments):
+		return nil, repositories.ErrUserNotFound
+	default:
 		return nil, err
 	}
-
-	return &user, nil
 }
 
 func (u *userRepository) DeleteUser(ctx context.Context, id string) error {
@@ -47,15 +52,18 @@ func (u *userRepository) DeleteUser(ctx context.Context, id string) error {
 	}
 
 	one, err := mgm.Coll(&repositories.User{}).DeleteOne(ctx, bson.M{"_id": hex})
-	if err != nil {
+	switch {
+	case err == nil:
+		if one.DeletedCount == 0 {
+			return repositories.ErrUserNotFound
+		}
+
+		return nil
+	case errors.Is(err, mongo.ErrNoDocuments):
+		return repositories.ErrUserNotFound
+	default:
 		return err
 	}
-
-	// todo
-	if one.DeletedCount == 0 {
-	}
-
-	return nil
 }
 
 func (u *userRepository) GetUser(ctx context.Context, id string) (*repositories.User, error) {
@@ -63,11 +71,14 @@ func (u *userRepository) GetUser(ctx context.Context, id string) (*repositories.
 
 	user := &repositories.User{}
 	err := mgm.Coll(&repositories.User{}).FindByIDWithCtx(ctx, id, user)
-	if err != nil {
+	switch {
+	case err == nil:
+		return user, nil
+	case errors.Is(err, mongo.ErrNoDocuments):
+		return nil, repositories.ErrUserNotFound
+	default:
 		return nil, err
 	}
-
-	return user, nil
 }
 
 func (u *userRepository) GetUsers(ctx context.Context, firstName, lastName, nickname, country, email *string, limit, offset *int64) ([]repositories.User, error) {

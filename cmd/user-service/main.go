@@ -44,7 +44,7 @@ var rootCmd = &cobra.Command{
 		// Connect to the database
 		mongoHealthCheck := mongo.Connect(cfg.DatabaseCfg, logger)
 
-		// Get the repository
+		// Create the repository
 		userRepository := mongo.NewUserRepository()
 
 		// Create the user service

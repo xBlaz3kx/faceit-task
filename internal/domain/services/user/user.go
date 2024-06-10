@@ -2,13 +2,17 @@ package user
 
 import (
 	"context"
+	errs "errors"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/samber/lo"
 	"github.com/xBlaz3kx/faceit-task/internal/repositories"
 	"github.com/xBlaz3kx/faceit-task/pkg/notifier"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.uber.org/zap"
 )
+
+var validate = validator.New()
 
 type userServiceImpl struct {
 	repository repositories.UserRepository
@@ -28,8 +32,14 @@ func NewUserService(repository repositories.UserRepository, notifier *notifier.N
 func (s *userServiceImpl) AddUser(ctx context.Context, user NewUser) (*User, error) {
 	s.logger.Info("Adding a new user", zap.Any("user", user))
 
+	// Validate the user
+	err := validate.Struct(user)
+	if err != nil {
+		return nil, errs.Join(ErrValidation, err)
+	}
+
 	repoUser := repositories.NewUser(user.FirstName, user.LastName, user.Nickname, user.Email, user.Password, user.Country)
-	err := s.repository.AddUser(ctx, repoUser)
+	err = s.repository.AddUser(ctx, repoUser)
 	if err != nil {
 		return nil, err
 	}
@@ -53,6 +63,8 @@ func (s *userServiceImpl) UpdateUser(ctx context.Context, user UpdateUser) (*Use
 	if err != nil {
 		return nil, err
 	}
+
+	// todo check if password is updated - we don't want to overwrite the password with the empty string
 
 	repoUser := repositories.NewUser(user.FirstName, user.LastName, user.Nickname, user.Email, user.Password, user.Country)
 	repoUser.ID = hex
