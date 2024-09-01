@@ -14,7 +14,7 @@ require (
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.19.0
 	github.com/tavsec/gin-healthcheck v1.6.2
-	go.mongodb.org/mongo-driver v1.16.0
+	go.mongodb.org/mongo-driver v1.16.1
 	go.uber.org/zap v1.27.0
 	golang.org/x/crypto v0.25.0
 	google.golang.org/grpc v1.64.0
