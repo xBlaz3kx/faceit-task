@@ -17,7 +17,7 @@ require (
 	go.mongodb.org/mongo-driver v1.16.1
 	go.uber.org/zap v1.27.0
 	golang.org/x/crypto v0.26.0
-	google.golang.org/grpc v1.64.0
+	google.golang.org/grpc v1.66.0
 	google.golang.org/protobuf v1.34.2
 )
 
@@ -25,7 +25,7 @@ require (
 	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
 	github.com/bytedance/sonic v1.12.1 // indirect
 	github.com/bytedance/sonic/loader v0.2.0 // indirect
-	github.com/cespare/xxhash/v2 v2.2.0 // indirect
+	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cloudwego/base64x v0.1.4 // indirect
 	github.com/cloudwego/iasm v0.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
@@ -78,7 +78,7 @@ require (
 	golang.org/x/sync v0.8.0 // indirect
 	golang.org/x/sys v0.24.0 // indirect
 	golang.org/x/text v0.17.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20240318140521-94a12d6c2237 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20240604185151-ef581f913117 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
