@@ -40,7 +40,14 @@ func (u *userRepository) AddUser(ctx context.Context, user *users.User) error {
 	}
 
 	userEntity := toEntity(user)
-	return mgm.Coll(&User{}).CreateWithCtx(ctx, &userEntity)
+	err = mgm.Coll(&User{}).CreateWithCtx(ctx, &userEntity)
+	if err != nil {
+		return err
+	}
+
+	user.ID = userEntity.ID.Hex()
+
+	return nil
 
 }
 
@@ -171,14 +178,11 @@ func (u *userRepository) Watch(ctx context.Context) (<-chan users.UserEvent, err
 		},
 	}}
 
-	opts := options.ChangeStream().SetMaxAwaitTime(2 * time.Second)
+	opts := options.ChangeStream()
 	changeStream, err := database.Watch(ctx, mongo.Pipeline{matchStage}, opts)
 	if err != nil {
 		return nil, err
 	}
-
-	//nolint:errcheck
-	defer changeStream.Close(context.Background())
 
 	userChan := make(chan users.UserEvent)
 
@@ -187,9 +191,39 @@ func (u *userRepository) Watch(ctx context.Context) (<-chan users.UserEvent, err
 		for {
 			select {
 			case <-ctx.Done():
+				close(userChan)
+
+				err := changeStream.Close(context.Background())
+				if err != nil {
+					u.logger.Error("Error closing change stream", zap.Error(err))
+				}
+
 				return
 			default:
+				if changeStream.Next(ctx) {
+					changeEvent := struct {
+						FullDocument  *User  `bson:"fullDocument"`
+						OperationType string `bson:"operationType"`
+					}{}
 
+					if err := changeStream.Decode(&changeEvent); err != nil {
+						u.logger.Error("Error decoding change stream", zap.Error(err))
+						continue
+					}
+
+					event := users.UserEvent{
+						ChangeType: changeEvent.OperationType,
+					}
+					if changeEvent.FullDocument == nil {
+						event.User = users.User{}
+					} else {
+						event.User = *toUser(changeEvent.FullDocument)
+					}
+
+					userChan <- event
+				}
+
+				time.Sleep(time.Millisecond * 100)
 			}
 		}
 	}()
@@ -201,7 +235,6 @@ func toEntity(user *users.User) User {
 	hex, _ := primitive.ObjectIDFromHex(user.ID)
 
 	entity := User{
-
 		SchemaVersion: schemaVersion,
 		FirstName:     user.FirstName,
 		LastName:      user.LastName,

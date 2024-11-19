@@ -115,6 +115,7 @@ func (s *userServiceImpl) Watch(ctx context.Context) (<-chan UserEvent, error) {
 
 func toUser(user *NewUser) *User {
 	return &User{
+
 		FirstName: user.FirstName,
 		LastName:  user.LastName,
 		Nickname:  user.Nickname,

@@ -6,6 +6,7 @@ import (
 	"github.com/kamva/mgm/v3"
 	"github.com/tavsec/gin-healthcheck/checks"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/readconcern"
 	"go.uber.org/zap"
 )
 
@@ -23,6 +24,7 @@ func Connect(configuration Configuration, logger *zap.Logger) checks.Check {
 	once.Do(func() {
 		clientOpts := options.Client()
 		clientOpts.ApplyURI(configuration.URI)
+		clientOpts.SetReadConcern(readconcern.Majority())
 
 		err := mgm.SetDefaultConfig(nil, "faceit", clientOpts)
 		if err != nil {

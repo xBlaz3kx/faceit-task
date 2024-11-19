@@ -140,6 +140,7 @@ func (s *UserGrpcHandler) Watch(_ *emptypb.Empty, server User_WatchServer) error
 
 	changeStream, err := s.userService.Watch(server.Context())
 	if err != nil {
+		s.logger.Error("Failed to watch the users", zap.Error(err))
 		return status.Error(codes.Internal, "unknown error occurred while watching the users")
 	}
 
