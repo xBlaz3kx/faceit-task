@@ -8,7 +8,6 @@ import (
 	"github.com/xBlaz3kx/faceit-task/internal/mongo"
 	"github.com/xBlaz3kx/faceit-task/internal/pkg/grpc"
 	"github.com/xBlaz3kx/faceit-task/internal/pkg/http"
-	"github.com/xBlaz3kx/faceit-task/proto/v1"
 	"go.uber.org/zap"
 )
 
@@ -41,7 +40,7 @@ func Run(ctx context.Context, cfg AppConfig) {
 
 	// Register handler
 	grpcUserHandler := grpc2.NewUserGrpcHandler(userService)
-	v1.RegisterUserServer(grpcServer, grpcUserHandler)
+	grpc2.RegisterUserServer(grpcServer, grpcUserHandler)
 
 	grpcServer.Start(cfg.Server)
 
