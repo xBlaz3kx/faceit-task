@@ -1,8 +1,8 @@
 proto:
-	protoc --go_out=./pkg/proto/v1 \
+	protoc --go_out=./internal/grpc \
 	--go_opt=paths=source_relative \
-  	--proto_path=./pkg/proto/v1 \
+  	--proto_path=./proto/v1 \
 	--experimental_allow_proto3_optional \
-	--go-grpc_out=./pkg/proto/v1 \
+	--go-grpc_out=./internal/grpc \
 	--go-grpc_opt=paths=source_relative \
-    pkg/proto/v1/*.proto
+    proto/v1/*.proto

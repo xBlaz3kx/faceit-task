@@ -1,14 +1,11 @@
-package handlers
+package grpc
 
 import (
 	"context"
 	"errors"
 
-	"github.com/google/uuid"
 	"github.com/samber/lo"
-	"github.com/xBlaz3kx/faceit-task/internal/domain/services/user"
-	"github.com/xBlaz3kx/faceit-task/internal/repositories"
-	v1 "github.com/xBlaz3kx/faceit-task/pkg/proto/v1"
+	"github.com/xBlaz3kx/faceit-task/internal/domain/users"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
@@ -17,20 +14,20 @@ import (
 )
 
 type UserGrpcHandler struct {
-	v1.UnimplementedUserServer
-	userService user.UserService
+	UnimplementedUserServer
+	userService users.Service
 	logger      *zap.Logger
 }
 
-func NewUserGrpcHandler(userService user.UserService) *UserGrpcHandler {
+func NewUserGrpcHandler(userService users.Service) *UserGrpcHandler {
 	return &UserGrpcHandler{
 		userService: userService,
 		logger:      zap.L().Named("user-grpc-handler"),
 	}
 }
 
-func (s *UserGrpcHandler) CreateUser(ctx context.Context, request *v1.CreateUserRequest) (*v1.CreateUserResponse, error) {
-	serviceReq := user.NewUser{
+func (s *UserGrpcHandler) CreateUser(ctx context.Context, request *CreateUserRequest) (*CreateUserResponse, error) {
+	serviceReq := users.NewUser{
 		FirstName: request.GetFirstName(),
 		LastName:  request.GetLastName(),
 		Nickname:  request.GetNickname(),
@@ -42,26 +39,26 @@ func (s *UserGrpcHandler) CreateUser(ctx context.Context, request *v1.CreateUser
 	usr, err := s.userService.AddUser(ctx, serviceReq)
 	switch {
 	case err == nil:
-		return &v1.CreateUserResponse{
+		return &CreateUserResponse{
 			User: toGrpcUser(usr),
 		}, nil
-	case errors.Is(err, user.ErrValidation):
+	case errors.Is(err, users.ErrValidation):
 		return nil, status.Errorf(codes.FailedPrecondition, "failed to validate the user: %v", err.Error())
-	case errors.Is(err, repositories.ErrUserAlreadyExists):
+	case errors.Is(err, users.ErrUserAlreadyExists):
 		return nil, status.Errorf(codes.AlreadyExists, "user with email %s already exists", request.GetEmail())
 	default:
 		return nil, status.Error(codes.Internal, "unknown error occurred while creating the user")
 	}
 }
 
-func (s *UserGrpcHandler) GetUser(ctx context.Context, request *v1.GetUserRequest) (*v1.GetUserResponse, error) {
+func (s *UserGrpcHandler) GetUser(ctx context.Context, request *GetUserRequest) (*GetUserResponse, error) {
 	user, err := s.userService.GetUser(ctx, request.GetId())
 	switch {
 	case err == nil:
-		return &v1.GetUserResponse{
+		return &GetUserResponse{
 			User: toGrpcUser(user),
 		}, nil
-	case errors.Is(err, repositories.ErrUserNotFound):
+	case errors.Is(err, users.ErrUserNotFound):
 		return nil, status.Errorf(codes.NotFound, "user with id %s not found", request.GetId())
 	case errors.Is(err, primitive.ErrInvalidHex):
 		return nil, status.Errorf(codes.InvalidArgument, "the provided id is not a valid hex string")
@@ -70,8 +67,8 @@ func (s *UserGrpcHandler) GetUser(ctx context.Context, request *v1.GetUserReques
 	}
 }
 
-func (s *UserGrpcHandler) UpdateUser(ctx context.Context, request *v1.UpdateUserRequest) (*v1.UpdateUserResponse, error) {
-	updateUserReq := user.UpdateUser{
+func (s *UserGrpcHandler) UpdateUser(ctx context.Context, request *UpdateUserRequest) (*UpdateUserResponse, error) {
+	updateUserReq := users.UpdateUser{
 		Id:        request.GetId(),
 		FirstName: request.GetFirstName(),
 		LastName:  request.GetLastName(),
@@ -84,10 +81,10 @@ func (s *UserGrpcHandler) UpdateUser(ctx context.Context, request *v1.UpdateUser
 	user, err := s.userService.UpdateUser(ctx, updateUserReq)
 	switch {
 	case err == nil:
-		return &v1.UpdateUserResponse{
+		return &UpdateUserResponse{
 			User: toGrpcUser(user),
 		}, nil
-	case errors.Is(err, repositories.ErrUserNotFound):
+	case errors.Is(err, users.ErrUserNotFound):
 		return nil, status.Errorf(codes.NotFound, "user with id %s not found", request.GetId())
 	case errors.Is(err, primitive.ErrInvalidHex):
 		return nil, status.Errorf(codes.InvalidArgument, "the provided id is not a valid hex string")
@@ -96,24 +93,39 @@ func (s *UserGrpcHandler) UpdateUser(ctx context.Context, request *v1.UpdateUser
 	}
 }
 
-func (s *UserGrpcHandler) DeleteUser(ctx context.Context, request *v1.DeleteUserRequest) (*v1.DeleteUserResponse, error) {
+func (s *UserGrpcHandler) DeleteUser(ctx context.Context, request *DeleteUserRequest) (*DeleteUserResponse, error) {
 	err := s.userService.DeleteUser(ctx, request.GetId())
 	switch {
 	case err == nil:
-		return &v1.DeleteUserResponse{
-			Status: v1.DeleteStatus_OK,
+		return &DeleteUserResponse{
+			Status: DeleteStatus_OK,
 		}, nil
 	case errors.Is(err, primitive.ErrInvalidHex):
 		return nil, status.Errorf(codes.InvalidArgument, "the provided id is not a valid hex string")
-	case errors.Is(err, repositories.ErrUserNotFound):
+	case errors.Is(err, users.ErrUserNotFound):
 		return nil, status.Errorf(codes.NotFound, "user with id %s not found", request.GetId())
 	default:
 		return nil, status.Error(codes.Internal, "unknown error occurred while deleting the user")
 	}
 }
 
-func (s *UserGrpcHandler) GetUsers(ctx context.Context, request *v1.ListUsersRequest) (*v1.ListUsersResponse, error) {
-	users, err := s.userService.GetUsers(ctx, user.Query{
+func (s *UserGrpcHandler) GetUsers(ctx context.Context, request *ListUsersRequest) (*ListUsersResponse, error) {
+	getUsers, err := s.userService.GetUsers(ctx, toQuery(request))
+	if err != nil {
+		return nil, status.Error(codes.Internal, "unknown error occurred while getting the users")
+	}
+
+	userList := lo.Map(getUsers, func(item users.User, index int) *UserModel {
+		return toGrpcUser(&item)
+	})
+
+	return &ListUsersResponse{
+		Users: userList,
+	}, nil
+}
+
+func toQuery(request *ListUsersRequest) users.Query {
+	return users.Query{
 		FirstName: request.FirstName,
 		LastName:  request.LastName,
 		Nickname:  request.Nickname,
@@ -121,35 +133,33 @@ func (s *UserGrpcHandler) GetUsers(ctx context.Context, request *v1.ListUsersReq
 		Email:     request.Email,
 		Limit:     request.Limit,
 		Offset:    request.Page,
-	})
-	if err != nil {
-		return nil, status.Error(codes.Internal, "unknown error occurred while getting the users")
 	}
-
-	userList := lo.Map(users, func(item user.User, index int) *v1.UserModel {
-		return toGrpcUser(&item)
-	})
-
-	return &v1.ListUsersResponse{
-		Users: userList,
-	}, nil
 }
 
-func (s *UserGrpcHandler) Watch(_ *emptypb.Empty, server v1.User_WatchServer) error {
-	// For simplicity, we will generate a random client id for creating and storing a change stream for a client
-	clientId := uuid.New().String()
+func (s *UserGrpcHandler) Watch(_ *emptypb.Empty, server User_WatchServer) error {
 
-	// Create a new change stream channel for the client
-	streamChannel := s.userService.GetChangeStreamChannel(clientId)
-	// After the client disconnects, remove the change stream channel
-	defer s.userService.RemoveStream(clientId)
+	changeStream, err := s.userService.Watch(server.Context())
+	if err != nil {
+		return status.Error(codes.Internal, "unknown error occurred while watching the users")
+	}
 
 	for {
 		select {
-		// Check if the client has disconnected or the context has been canceled
-		case <-server.Context().Done():
-			err := server.Context().Err()
+		case changeEvent, ok := <-changeStream:
+			if !ok {
+				s.logger.Error("Change stream closed")
+				return nil
+			}
 
+			response := toStreamResponse(changeEvent)
+			err := server.Send(response)
+			if err != nil {
+				return err
+			}
+
+		case <-server.Context().Done():
+			// Check if the client has disconnected or the context has been canceled
+			err := server.Context().Err()
 			if errors.Is(err, context.Canceled) {
 				s.logger.Info("Client disconnected")
 			} else {
@@ -157,21 +167,6 @@ func (s *UserGrpcHandler) Watch(_ *emptypb.Empty, server v1.User_WatchServer) er
 			}
 
 			return nil
-		case change, closed := <-streamChannel:
-			if !closed {
-				return nil
-			}
-
-			response := &v1.WatchStreamResponse{
-				ChangeType: toChangeType(change.OperationType),
-				User:       toGrpcUser(&change.User),
-			}
-
-			// Send the update to the stream
-			err := server.Send(response)
-			if err != nil {
-				return err
-			}
 		}
 	}
 }
@@ -179,22 +174,28 @@ func (s *UserGrpcHandler) Watch(_ *emptypb.Empty, server v1.User_WatchServer) er
 func (s *UserGrpcHandler) mustEmbedUnimplementedUserServer() {
 }
 
-func toChangeType(operationType user.ChangeStreamOperation) v1.ChangeType {
-	switch operationType {
-	case user.ChangeStreamOperationInsert:
-		return v1.ChangeType_INSERT
-	case user.ChangeStreamOperationUpdate:
-		return v1.ChangeType_UPDATE
-	case user.ChangeStreamOperationDelete:
-		return v1.ChangeType_DELETE
+func toStreamResponse(change users.UserEvent) *WatchStreamResponse {
+	return &WatchStreamResponse{
+		ChangeType: toChangeType(change.ChangeType),
+		User:       toGrpcUser(&change.User),
+	}
+}
+
+func toChangeType(opType string) ChangeType {
+	switch opType {
+	case "insert":
+		return ChangeType_INSERT
+	case "update":
+		return ChangeType_UPDATE
+	case "delete":
+		return ChangeType_DELETE
 	default:
-		// This should never happen
 		return -1
 	}
 }
 
-func toGrpcUser(user *user.User) *v1.UserModel {
-	return &v1.UserModel{
+func toGrpcUser(user *users.User) *UserModel {
+	return &UserModel{
 		Id:       user.ID,
 		Name:     user.FirstName,
 		LastName: user.LastName,

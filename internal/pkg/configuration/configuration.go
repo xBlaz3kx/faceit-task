@@ -6,20 +6,8 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
-	"github.com/xBlaz3kx/faceit-task/internal/repositories/mongo"
 	"go.uber.org/zap"
 )
-
-type AppConfig struct {
-	// Server is the address the server will listen on
-	Server string `yaml:"server" json:"server" mapstructure:"server"`
-
-	// DatabaseCfg contains the connection URI for the database
-	DatabaseCfg mongo.Configuration `yaml:"database" json:"database" mapstructure:"database"`
-
-	// todo possible improvements:
-	// - add observability configuration (logs + tracing)
-}
 
 // GetConfiguration loads the configuration from Viper and validates it.
 func GetConfiguration(viper *viper.Viper, configStruct interface{}) {
