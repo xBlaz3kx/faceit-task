@@ -21,8 +21,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-server:
-    name: "Build server"
+  build-user-service:
+    name: "Build user service"
     uses: ./.github/workflows/build.yaml
     with:
       service: user

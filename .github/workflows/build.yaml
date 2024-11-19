@@ -18,7 +18,7 @@ jobs:
 
   # Build Docker image
   build-service:
-    name: Build and Push
+    name: Build and Push ${{ inputs.service }} Docker image
     runs-on: ubuntu-latest
 
     steps:
@@ -52,6 +52,7 @@ jobs:
         uses: reproducible-containers/buildkit-cache-dance@v3.1.2
         with:
           cache-source: go-build-cache
+          cache-map: ''
 
       - name: Build and push Docker image
         id: build-and-push

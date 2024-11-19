@@ -1,43 +1,37 @@
-name: Protobuf lint & compile
-
+name: "Protobuf"
 on:
   push:
-    paths:
-      - '**/*.proto'
     branches:
       - main
+    paths:
+      - "**.proto"
+      - "**/buf.yaml"
+      - "**/buf.lock"
+      - "**/buf.md"
+      - "**/README.md"
+      - "**/LICENSE"
 
   pull_request:
-    paths:
-      - '**/*.proto'
+    types: [ opened, synchronize, reopened ]
     branches:
       - main
+      - master
+    paths:
+      - "**.proto"
+      - "**/buf.yaml"
+      - "**/buf.lock"
+      - "**/buf.md"
+      - "**/README.md"
+      - "**/LICENSE"
+
+  workflow_dispatch:
 
 jobs:
-
-  lint:
-    name: Lint
+  proto:
+    name: "Proto"
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Super-linter
-        uses: super-linter/super-linter@v7.1.0
-        env:
-          # To report GitHub Actions status checks
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  compile:
-    name: Compile
-    runs-on: ubuntu-latest
-    needs:
-      - lint
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Compile the proto files
-        run: make proto
+      - uses: bufbuild/buf-action@v1
