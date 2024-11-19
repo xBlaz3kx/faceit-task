@@ -6,29 +6,26 @@ services:
     container_name: mongodb
     hostname: mongodb
     restart: on-failure
+    command: "--config /etc/mongo/mongo.conf"
     environment:
       - MONGO_INITDB_ROOT_USERNAME=mongo
       - MONGO_INITDB_ROOT_PASSWORD=mongo
       - MONGO_INITDB_DATABASE=faceit
+      - MONGO_REPLICA_SET_NAME=rs0
     volumes:
       - mongo:/data/db
+      - ./mongo.conf:/etc/mongo/mongo.conf
+      - ./keyfile:/opt/keyfile
     networks:
       - default
     ports:
       - "27017:27017"
     healthcheck:
-      test: [
-        "CMD",
-        "mongosh",
-        "--quiet",
-        "localhost:27017/faceit",
-        "--eval",
-        "'quit(db.runCommand({ ping: 1 }).ok ? 0 : 2)'",
-      ]
+      test: |
+        test $$(mongosh --quiet -u $${MONGO_INITDB_ROOT_USERNAME} -p $${MONGO_INITDB_ROOT_PASSWORD} --eval "try { rs.initiate({ _id: 'rs0', members: [{ _id: 0, host: 'mongodb' }] }).ok } catch (_) { rs.status().ok }") -eq 1
       interval: 10s
-      timeout: 5s
       retries: 3
-      start_period: 20s
+      start_period: 15s
 
   # User service (healthcheck is built in the image)
   user-service:
